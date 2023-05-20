@@ -17,7 +17,7 @@
 . ^ $ * + ? \ | ( ) { } [ ]  
 ```
 ---
-#### (1) [] 문자 클래스
+#### [] 문자 클래스
 - 정규표현식에서 대괄호 [] 는 대괄호 안에 포함된 문자들 중 하나와 매치를 뜻한다.
 ```
 [abc] # abc 중 하나와 매치
@@ -42,7 +42,7 @@
 [^abc] # a, b, c를 제외한 모든 문자와 매치
 ```
 ---
-#### (2) . 모든 문자
+#### . 모든 문자
 - .은 줄바꿈 문자인 \n 을 제외한 모든 문자와 매치된다.
 ```
 a.b # 'a + 모든 문자 + b'를 뜻함
@@ -61,7 +61,7 @@ a.b # a와 b 사이에 마침표가 있으므로 매치
 a0b # a와 b 사이에 마침표가 없으므로 매치 안됨
 ```
 ---
-#### (3) * 반복
+#### * 반복
 - * 앞에 오는 문자가 0개를 포함하여 몇 개가 오든 모두 매치된다.
 ```
 lo*l
@@ -75,7 +75,7 @@ lbl # 매치 안됨
 loooooooooooobooooooool # 매치 안됨
 ```
 ---
-#### (4) + 최소 한 번 이상 반복
+#### + 최소 한 번 이상 반복
 - + 앞에 있는 문자가 최소 한 번 이상 반복되어야 매치된다.
 ```
 lo+l
@@ -86,7 +86,7 @@ lol # 매치
 looooool # 매치
 ```
 ---
-#### (5) ? 없거나 하나 있거나
+#### ? 없거나 하나 있거나
 ? 앞에 있는 문자가 없거나 하나 있을 때 매치된다.
 ```
 lo?l
@@ -97,7 +97,7 @@ lol # 매치
 lool # 매치 안됨
 ```
 ---
-#### (6) {m, n} 반복 횟수 지정
+#### {m, n} 반복 횟수 지정
 - {m, n} 앞에 있는 문자가 m 번에서 n 번까지 반복될 때 매치된다.
 ```
  lo{3, 5}l
@@ -112,7 +112,7 @@ lool # 매치 안됨
 - {m}의 형태로 사용하면 반드시 m 번 반복인 경우만 매치된다.
 - {0,} 는 *, {1,} 는 +, {0,1} 는 ? 와 각각 동일하다.
 ---
-#### (7) | 여러 개의 표현식 중 하나
+#### | 여러 개의 표현식 중 하나
 여러 개의 정규표현식들을 | 로 구분하면 or 의 의미가 적용되어 정규표현식들 중 어느 하나와 매치된다.
 ```
 a|b|c # hello or hi or bye
@@ -126,10 +126,113 @@ a b c # 매치
 d # 매치 안됨
 ```
 ---
+#### ^ 문자열의 제일 처음과 매치
+- 문자열이 ^의 뒤에 있는 문자로 시작되면 매치된다. 여러 줄의 문자열일 경우 첫 줄만 적용된다. (단, re.MULTILINE 옵션이 적용되면 각 줄의 첫 문자를 검사하여 매치된다.)
+```
+^a
+```
+```
+a # 매치
+aaa # 매치
+baaa # 매치 안됨
+1aaa # 매치 안됨
+```
+---
+#### $ 문자열의 제일 마지막과 매치
+문자열이 $의 앞에 있는 문자로 끝나면 매치된다. 여러 줄의 문자열일 경우 마지막 줄만 적용된다. (단, re.MULTILINE 옵션이 적용되면 각 줄의 마지막 문자를 검사하여 매치된다.)
+```
+a$
+```
+```
+a # 매치
+aa # 매치
+baa # 매치
+aabb # 매치안됨
+```
+---
+####\A , \Z
+- \A 는 ^ 와 동일하지만 re.MULTILINE 옵션을 무시하고 항상 문자열 첫 줄의 시작 문자를 검사한다. \Z 는 $ 와 동일하지만 re.MULTILINE 옵션을 무시하고 항상 문자열 마지막 줄의 끝 문자를 검사한다.
+---
+#### 조건이 있는 표현식
+- 표현식1(?=표현식2): 표현식1 뒤의 문자열이 표현식2와 매치되면 표현식1 매치.
+```
+'hello(?=world)' # hello 뒤에 world가 있으면 hello를 매치
+```
+```
+helloworld # hello 뒤에 world가 있기 때문에 hello가 매치됨
+byeworld # hello가 없기 때문에 매치 안됨
+helloJames # hello 뒤에 world가 없기 때문에 매치 안됨
+```
+- 표현식1(?!표현식2): 표현식1 뒤의 문자열이 표현식2와 매치되지 않으면 표현식1 매치.
+```
+'hello(?!world)' # hello 뒤에 world가 없으면 hello를 매치
+```
+```
+helloworld # hello 뒤에 world가 있기 때문에 매치 안됨
+byeworld # hello가 없기 때문에 매치 안됨
+helloJames # hello 뒤에 world가 없기 때문에 hello가 매치됨
+```
+- (?<=표현식1)표현식2: 표현식2 앞의 문자열이 표현식1과 매치되면 표현식2 매치.
+```
+'(?<=hello)world' # world 앞에 hello가 있으면 world를 매치
+helloworld # world 앞에 hello가 있기 때문에 world가 매치됨
+byeworld # world 앞에 hello가 없기 때문에 매치 안됨
+helloJames # world가 없기 때문에 매치 안됨
+```
+- (?<!표현식1)표현식2: 표현식2 앞의 문자열이 표현식1과 매치되지 않으면 표현식2 매치.
+```
+'(?<!hello)world' # world 앞에 hello가 없으면 world를 매치
+```
+```
+helloworld # world 앞에 hello가 있기 때문에 매치 안됨
+byeworld # world 앞에 hello가 없기 때문에 world가 매치됨
+helloJames # world가 없기 때문에 매치 안됨
+```
+---
+### re Python 정규표현식 모듈
+- Python 에서는 re 모듈을 통해 정규표현식을 사용한다.
+```
+import re
+```
+---
+#### compile 정규표현식 컴파일
+- re.compile() 명령을 통해 정규표현식을 컴파일하여 변수에 저장한 후 사용할 수 있다.
+```
+변수이름 = re.compile('정규표현식')
+```
+- 정규표현식을 컴파일하여 변수에 할당한 후 타입을 확인해보면 _sre.SRE_Pattern 이라는 이름의 클래스 객체인 것을 볼 수 있다.
+```
+p = re.compile('[abc]')
+print(type(p))
+```
+<class '_sre.SRE_Pattern'>
+---
+### 패턴 객체의 메서드
+- 패턴 객체는 매치를 검색할 수 있는 네 가지 메서드를 제공한다.
+다음의 정규표현식으로 각각의 메서드를 비교해본다.
+```
+p = re.compile('[a-z]+')
+```
+---
+#### match: 시작부터 일치하는 패턴 찾기
+- 문자열의 처음 시작부터 검색하여 일치하지 않는 부분이 나올 때까지 찾는다.
+```
+p.match('aaaaa')
+<_sre.SRE_Match object; span=(0, 5), match='aaaaa'>
 
+p.match('bbbbbbbbb')
+<_sre.SRE_Match object; span=(0, 9), match='bbbbbbbbb'>
+
+p.match('1aaaa')
+None
+
+p.match('aaa1aaa')
+<_sre.SRE_Match object; span=(0, 3), match='aaa'>
+```
+- 검색의 결과로 _sre.SRE_Match 객체를 리턴한다.
 --- 
 < Reference >
-- Chat GPT : 정규 표현식에 대한 정의와 사용 분야
-- 정규 표현식 문법 : https://nachwon.github.io/regular-expressions/
+- 정규 표현식에 대한 정의와 사용 분야 : Chat GPT
+- 정규 표현식 문법 : Che1's Blog [https://nachwon.github.io/regular-expressions/]
 - 정규 표현식 문법 : 이한영 강사님 github
-- 정규 표현식 문법 : 점프 투 파이썬 : https://wikidocs.net/4308
+- 정규 표현식 문법 : 점프 투 파이썬 [https://wikidocs.net/4308]
