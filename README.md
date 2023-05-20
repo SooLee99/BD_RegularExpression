@@ -150,7 +150,7 @@ baa # 매치
 aabb # 매치안됨
 ```
 ---
-####\A , \Z
+#### \A , \Z
 - \A 는 ^ 와 동일하지만 re.MULTILINE 옵션을 무시하고 항상 문자열 첫 줄의 시작 문자를 검사한다. \Z 는 $ 와 동일하지만 re.MULTILINE 옵션을 무시하고 항상 문자열 마지막 줄의 끝 문자를 검사한다.
 ---
 #### 조건이 있는 표현식
@@ -231,6 +231,257 @@ p.match('aaa1aaa')
 ```
 - 검색의 결과로 _sre.SRE_Match 객체를 리턴한다.
 --- 
+#### search: 전체 문자열에서 첫 번째 매치 찾기
+- 문자열 전체에서 검색하여 처음으로 매치되는 문자열을 찾는다.
+```
+p.search('aaaaa')
+<_sre.SRE_Match object; span=(0, 5), match='aaaaa'>
+
+p.search('11aaaa')
+<_sre.SRE_Match object; span=(2, 6), match='aaaa'>
+
+p.search('aaa11aaa')
+<_sre.SRE_Match object; span=(0, 3), match='aaa'>
+
+p.search('1aaa11aaa1')
+<_sre.SRE_Match object; span=(1, 4), match='aaa'>
+```
+match와 동일한 형태로 결과를 출력해준다.
+---
+#### findall: 모든 매치를 찾아 리스트로 반환
+- 문자열 내에서 일치하는 모든 패턴을 찾아 리스트로 반환한다.
+```
+p.findall('aaa')
+['aaa']
+
+p.findall('11aaa')
+['aaa']
+
+p.findall('1a1a1a1a1a')
+['a', 'a', 'a', 'a', 'a']
+
+p.findall('1aa1aaa1a1aa1aaa')
+['aa', 'aaa', 'a', 'aa', 'aaa']
+```
+---
+#### finditer: 모든 매치를 찾아 반복가능 객체로 반환
+```
+p.finditer('a1bb1ccc')
+<callable_iterator object at 0x7f850c4285f8>
+```
+- callable_iterator라는 객체가 반환되었다. for을 사용하여 하나씩 출력해보자.
+```
+f_iter = p.finditer('a1bb1ccc')
+for i in f_iter:
+    print(i)
+```
+```
+<_sre.SRE_Match object; span=(0, 1), match='a'>
+<_sre.SRE_Match object; span=(2, 4), match='bb'>
+<_sre.SRE_Match object; span=(5, 8), match='ccc'>
+```
+- 반복가능 객체는 각 매치의 결과인 매치 객체를 포함하고 있다.
+---
+#### 매치 객체의 메서드
+- 패턴 객체의 메서드를 통해 리턴된 매치 객체는 아래와 같은 정보를 담고 있다.
+```
+<_sre.SRE_Match object; span=(매치 시작지점 인덱스, 매치 끝지점 인덱스), match='매치된 문자열'>
+```
+```
+p = re.compile('[a-z]+')
+result = p.search('1aaa11aaa1')
+print(result)
+# 위의 코드를 실행하면 아래의 매치 오브젝트를 얻는다.
+
+<_sre.SRE_Match object; span=(1, 4), match='aaa'>
+# 매치 객체의 메서드를 실행한 결과는 아래와 같다.
+
+result.group()
+aaa
+
+result.start()
+1
+
+result.end()
+4
+
+result.span()
+(1, 4)
+```
+--- 
+#### () 그룹화
+- 정규표현식을 () 안에 넣으면 그 부분만 그룹화된다. groups 메서드를 통해 그룹들을 튜플 형태로 리턴 할 수 있다.
+```
+p = re.search('(hello)(world)', 'helloworld') # 정규표현식 hello와 world의 매치 결과를 각각 그룹화하였다
+grouping = p.groups()
+print(grouping)
+```
+- ('hello', 'world') # 각 그룹의 매치 결과가 튜플로 묶여서 리턴됨
+- group 메서드를 통해 각 그룹을 호출할 수 있다.
+```
+p.group() # 인자를 넣지 않으면 전체 매치 결과 리턴
+helloworld
+
+p.group(0) # group()와 같다
+helloworld
+
+p.group(1) # 1번 그룹 매치 결과 리턴
+hello
+
+p.group(2) # 2번 그룹 매치 결과 리턴
+world
+```
+---
+#### 그룹 이름 지정
+- 그룹에 이름을 지정하려면 다음과 같이 한다.
+```
+(?P<그룹이름>표현식)
+```
+- 표현식 a의 매치 결과는 그룹 first에 저장되고 표현식 b의 매치 결과는 그룹 second에 저장된다.
+```
+re.match('(?P<first>a)(?P<second>b)', 'ab')
+<_sre.SRE_Match object; span=(0, 2), match='ab'>
+```
+- 위의 표현식은 그룹화가 된다는 점을 제외하면 아래의 표현식과 동일한 결과를 돌려준다.
+```
+re.match('ab', 'ab')
+<_sre.SRE_Match object; span=(0, 2), match='ab'>
+```
+---
+#### 그룹 재참조
+- 그룹을 지정하면 같은 \그룹번호 와 같은 형식으로 표현식 내에서 다시 호출하여 사용할 수 있다.
+이 때, 반드시 표현식 앞에 r 을 붙여야 제대로 작동한다. 이에 대해서는 아래에 자세히 설명한다.
+```
+re.match(r'(a)(b)\1\2', 'abab') # 표현식 'abab'와 동일하다
+<_sre.SRE_Match object; span=(0, 4), match='abab'> # abab가 모두 매치되었다
+```
+- 그룹의 이름을 지정하였을 경우 (?P=그룹이름) 의 형식으로 호출할 수 있다.
+```
+re.match('(?P<first>a)(?P<second>b)(?P=first)(?P=second)', 'abab') # 표현식 'abab'와 동일하다
+<_sre.SRE_Match object; span=(0, 4), match='abab'> # abab가 모두 매치되었다
+```
+---
+#### 컴파일 옵션
+- 정규표현식을 컴파일 할 때 옵션을 지정해줄 수 있다.
+```
+변수이름 = re.compile('정규표현식', re.옵션)
+```
+---
+#### DOTALL, S
+- .은 줄바꿈 문자 \n 를 제외한 모든 것과 매치된다. 컴파일 할 때 re.DOTALL 또는 re.S 옵션을 넣어주면 \n 까지 매치되도록 할 수 있다.
+```
+p = re.compile('.') # 옵션 없음
+result = p.findall('1a\nbc')
+print(result)
+```
+- ['1', 'a', 'b', 'c'] # \n이 매치되지 않음
+```
+p = re.compile('.', re.DOTALL) # re.DOTALL 옵션 추가
+result = p.findall('1a\nbc')
+print(result)
+```
+['1', 'a', '\n', 'b', 'c'] # \n까지 매치
+---
+#### IGNORECASE, I
+- re.IGNORECASE 또는 re.I 옵션을 넣어주면 대소문자를 구별하지 않고 매치된다.
+```
+p = re.compile('[a-z]') # 소문자만 매치
+result = p.findall('aAbB')
+print(result)
+```
+- ['a', 'b']
+```
+p = re.compile('[a-z]', re.IGNORECASE) # re.IGNORECASE 옵션 추가
+result = p.findall('aAbB')
+print(result)
+```
+['a', 'A', 'b', 'B'] # 소문자와 대문자 모두 매치
+---
+#### MULTILINE, M
+- re.MULTILINE 또는 re.M 옵션을 넣어주면 여러 줄의 문자열에 ^ 와 $ 를 적용할 수 있다.
+```
+text = '''student-1-name: James
+student-2-name: John
+student-3-name: Jordan
+teacher-1-name: Mike
+student-5-name: John'''
+```
+```
+p = re.compile('^student.*') # 뒤따라 오는 문자 종류와 개수에 상관없이 student로 시작하는 문자열 매치 
+result = p.findall(text)
+print(result)
+```
+- ['student-1-name: James'] # 첫 줄만 매치되었다.
+```
+p = re.compile('^student.*', re.MULTILINE) # re.MULTILINE 옵션 추가
+result = p.findall(text)
+print(result)
+```
+- ['student-1-name: James', 'student-2-name: John', 'student-3-name: Jordan', 'student-5-name: John']
+- # student로 시작하는 모든 줄이 매치되었다.
+```
+p = re.compile('.*John$') # John으로 끝나는 문자열 매치
+result = p.findall(text)
+print(result)
+```
+- ['student-5-name: John'] # 가장 마지막 줄만 매치되었다
+```
+p = re.compile('.*John$', re.MULTILINE) # re.MULTILINE 옵션 추가
+result = p.findall(text)
+print(result)
+```
+- ['student-2-name: John', 'student-5-name: John'] # John으로 끝나
+---
+#### VERBOSE, X
+- re.VERBOSE 또는 re.X 옵션을 주면 좀 더 가독성 좋게 정규표현식을 작성할 수 있게 된다. 아래의 두 표현식은 동일하게 작동한다.
+```
+p = re.compile(r'&[#](0[0-7]+|[0-9]+|x[0-9a-fA-F]+);')
+```
+```
+p = re.compile(r"""
+ &[#]                # Start of a numeric entity reference
+ (
+     0[0-7]+         # Octal form
+   | [0-9]+          # Decimal form
+   | x[0-9a-fA-F]+   # Hexadecimal form
+ )
+ ;                   # Trailing semicolon
+""", re.VERBOSE) # re.VERBOSE 옵션 추가
+```
+- re.VERBOSE 옵션을 추가하면 정규표현식에 컴파일시 자동으로 제거되는 공백과 코멘트를 추가할 수 있게된다. (단, [] 안에 입력된 공백문자 제외)
+---
+### Python 정규표현식의 \ 문제
+- Python에서 정규표현식에 \ 을 사용할 때 아래와 같은 문제가 발생할 수 있다.
+```
+text = '\section'
+result = re.match('\\section', text)
+print(result)
+```
+```
+None
+```
+- \s는 공백문자를 뜻하는 메타문자로 인식되기 때문에 \section 이라는 문자열을 찾으려면 위해 이스케이프 코드 \\를 사용한 \\section 를 정규표현식에 입력해야한다.
+- 그러나 Python 정규식 엔진에서 리터럴 규칙에 의해 \\ 가 \로 해석되어 전달된다.
+- 따라서 \\ 를 문자 그대로 넘겨주어야하는데 이를 위해서는 \\\\ 로 입력해야한다.
+```
+text = '\section'
+result = re.match('\\\\section', text)
+print(result)
+```
+```
+<_sre.SRE_Match object; span=(0, 8), match='\\section'>
+```
+- 가독성이 심각하게 저하되는데 이를 방지하기 위해 다음과 같이 작성한다.
+```
+text = '\section'
+result = re.match(r'\\section', text) # raw string을 뜻하는 r을 앞에 붙여준다.
+print(result)
+```
+```
+<_sre.SRE_Match object; span=(0, 8), match='\\section'>
+```
+- 정규표현식 앞에 r은 항상 붙여주는 것이 권장된다.
+---
 < Reference >
 - 정규 표현식에 대한 정의와 사용 분야 : Chat GPT
 - 정규 표현식 문법 : Che1's Blog [https://nachwon.github.io/regular-expressions/]
